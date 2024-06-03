@@ -1,0 +1,63 @@
+[project]
+name = "myrrh-exts"
+description = "extension manager for the myrrh project"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.11.0"
+
+dynamic = ["version"]
+
+authors = [
+  { name="PyAnjel7", email="pyanjel7@gmail.com" },
+]
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: System :: Networking",
+]
+
+dependencies = [
+]
+
+[project.urls]
+Source = "https://github.com/pyanjel7/myrrh_core_srvs"
+
+[project.scripts]
+mexts = "myrrh.tools.mexts:main"
+
+[project.entry-points."myrrh.exts"]
+"/registry" = "myrrh.exts.core.service:ExtRegistry"
+
+[build-system]
+requires = [
+    "setuptools >= 61",
+    "setuptools_scm >= 6.4.2",
+    "wheel >= 0.37.0"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+[tool.setuptools_scm]
+write_to = "src/myrrh/exts/__version__.py"
+
+[tool.black]
+line_length = 300
+
+[tool.codespell]
+ignore-words-list = "inout, crasher, invokations, worl, te"
+
+[tool.mypy]
+disable_error_code = ["import-untyped", "abstract"]
+allow_redefinition = true
+namespace_packages = false
+files = [ "src" ]
