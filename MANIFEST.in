@@ -3,4 +3,3 @@ include CHANGELOG.md
 include AUTHORS.md
 include COPYRIGHT
 
-graft src/myrrh/resources

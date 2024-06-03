@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.urls]
-Source = "https://github.com/pyanjel7/myrrh_core_srvs"
+Source = "https://github.com/pyanjel7/myrrh_core_exts"
 
 [project.scripts]
 mexts = "myrrh.tools.mexts:main"
