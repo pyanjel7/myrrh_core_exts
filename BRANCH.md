@@ -1,11 +1,11 @@
 Project status
 ==============
 
-`Proto` - Tune - Fix - Release
+Proto - `Tune` - Fix - Release
 
 Baseline
 ========
-Myrrh 0.2.
+Myrrh 0.3
 
 Dashboard
 =========

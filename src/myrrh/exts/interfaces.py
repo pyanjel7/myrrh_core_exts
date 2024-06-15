@@ -22,18 +22,23 @@ ExtSessionT = typing.TypeVar("ExtSessionT", bound=IExtSession)
 
 def uri_rd(func):
     func.__access__ = "rd"
-    return func
+    return abc.abstractmethod(func)
 
 
 def uri_wr(func):
     func.__access__ = "wr"
-    return func
+    return abc.abstractmethod(func)
 
+def uri_wr_data(key):
+    def wrap(func):
+        func.__data__ = key
+        return uri_wr(func)
+    return wrap
 
 class IMyrrhExt(abc.ABC, typing.Generic[ExtSessionT]):
 
     @abc.abstractmethod
-    def basepath(self, path: str): ...
+    def basepath(self, path: str|None) -> str: ...
 
     @abc.abstractmethod
     def open(self, uri: str, *, req: urllib.request.Request | None = None) -> ExtSessionT: ...

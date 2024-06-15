@@ -1,15 +1,19 @@
 import unittest
 
-from myrrh.exts.core import registry
+from myrrh.exts import registry
 from hello import Hello
 
 
 class BasicTests(unittest.TestCase):
 
     def test_basic_findall(self):
-        exts = registry.Registry().findall("myrrh.exts")
+        exts = registry.Registry().findall("myrrh.exts:")
         self.assertIn("myrrh.exts:/registry", exts)
-
+        exts = registry.Registry().findall("myrrh.exts:/registry")
+        self.assertIn("myrrh.exts:/registry", exts)
+        exts = registry.Registry().findall("myrrh.exts:/nonexistent")
+        self.assertEqual([], exts)
+        
     def test_basic_load(self):
         registry.Registry().load("myrrh.exts")
 
@@ -53,13 +57,15 @@ class BasicTests(unittest.TestCase):
             v = s.hello("PyAnjel7")
 
         self.assertEqual(v, "Hello PyAnjel7")
-        
+
     def test_auto_load(self):
         import urllib.request
+
         registry.Registry().opener = urllib.request.OpenerDirector()
         with registry.Registry().open("myrrh.exts:/registry?=loaded") as s:
-            v = s.read(1)       
+            v = s.read(1)
         self.assertEqual(v, [["myrrh.exts:/registry"]])
-        
+
+
 if __name__ == "__main__":
     unittest.main()

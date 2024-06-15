@@ -39,8 +39,8 @@ Sample implementation of extension.
 myexts/hello.py
 ```python
 
-from myrrh.exts.interfaces import IExtSession, IMyrrhExt, uri_rd
-from myrrh.exts.protocol import StdExtSession
+from myrrh.exts.interfaces import IExtSession, uri_rd
+from myrrh.exts.protocol import StdExtSession, MyrrhExtBase
 from myrrh.exts.misc import URI
 from myrrh.exts.errors import InvalidPath
 
@@ -60,15 +60,11 @@ class HelloSession(StdExtSession, IEchoProtocol):
     def hello(self, myname):
         return f"Hello {myname} from {self.path}"
 
-class Hello(IMyrrhExt):
-    fullpath = ''
+class Hello(MyrrhExtBase):
     
-    def open(self, uri: str, *, req: urllib.request.Request | None = None) -> HelloSession:
-        path = str(URI(uri).path).removeprefix(self.fullpath)  
+    def open(self, uri: str, *, req = None) -> HelloSession:
+        path = URI(uri).path.removeprefix(self._path)  
         return HelloSession(path)
-    
-    def basepath(self, path: str):
-        self.fullpath = path
         
     def extend(self, path: str, _obj):
         raise InvalidPath(path)
@@ -88,7 +84,7 @@ myexts/pyproject.toml
 
 myexts/main.py
 ```python
-from myrrh.exts.core import Registry
+from myrrh.exts.registry import Registry
 
 Register().loads("myproject.exts")
 

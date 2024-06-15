@@ -12,11 +12,11 @@ import importlib
 import importlib.metadata
 
 
-from ..errors import ExtendTypeError, InvalidPath, URIOpenError
-from ..interfaces import IRootExt, IExtSession, IMyrrhExt, uri_rd
-from ..misc import URI, singleton, UriFile
-from ..client import ExtClient
-from ..protocol import StdExtSession
+from .errors import ExtendTypeError, InvalidPath, URIOpenError
+from .interfaces import IRootExt, IExtSession, IMyrrhExt, uri_rd
+from .misc import URI, singleton, UriFile
+from .client import ExtClient
+from .protocol import MyrrhExtBase, StdExtSession
 
 
 class IRootSession(IExtSession):
@@ -36,9 +36,7 @@ class RootSession(StdExtSession, IRootSession, IExtSession):
         return list(self.dirs)
 
 
-class Root(IRootExt, IMyrrhExt[RootSession]):
-
-    _path = "."
+class Root(MyrrhExtBase, IRootExt):
 
     def getserv(self, path: str) -> IMyrrhExt | None:
         dirs = self.dirs
@@ -54,7 +52,7 @@ class Root(IRootExt, IMyrrhExt[RootSession]):
         return None
 
     def open(self, uri: str, *, req: urllib.request.Request | None = None):
-        path = str(URI(uri).path)
+        path = URI(uri).path
 
         if path == self._path:
             return RootSession(path)
@@ -66,16 +64,13 @@ class Root(IRootExt, IMyrrhExt[RootSession]):
 
         return serv.open(uri, req=req)
 
-    def basepath(self, path: str):
-        self._path = path
-
     @functools.cached_property
     def dirs(self):
         self._dirs = dict()
         return self._dirs
 
     def extend(self, path: str, obj: typing.Any):
-    
+
         serv = self.getserv(path)
 
         if serv:
@@ -106,7 +101,7 @@ class PathHandler(urllib.request.BaseHandler):
         setattr(self, f"{scheme}_open", self._open)
 
     def _validate_req(self, req):
-        path = str(URI(req.full_url).path)
+        path = URI(req.full_url).path
         return self.root.getserv(path)
 
     def _open(self, req: urllib.request.Request) -> UriFile | ExtClient | None:
@@ -190,13 +185,13 @@ class Registry:
 
         handler.append(path, obj)
 
-    def findall(self, prefix: str | None = None) -> list[str]:
+    def findall(self, uri: str | None = None) -> list[str]:
         founds = []
-
+        uri_ = URI(uri)
         for group, eps in importlib.metadata.entry_points().items():
-            if not prefix or group.startswith(prefix):
+            if not uri or group == uri_.scheme:
                 for ep in eps:
-                    for ep in eps:
+                    if not uri_.path or ep.name.startswith(uri_.path):
                         founds.append(f"{ep.group}:{ep.name}")
 
         return founds
@@ -205,32 +200,31 @@ class Registry:
         if not path:
             group, _, path = group.partition(":")
 
-        kwa = {"group": group}
+        paths = {ep.name: ep for ep in importlib.metadata.entry_points(group=group)}
+        subpaths = [p for p in paths if p.startswith(path)]
 
-        if path:
-            kwa["name"] = path
-
-        for ep in importlib.metadata.entry_points(**kwa):
-            ep_ = typing.cast(importlib.metadata.EntryPoint, ep)
-
-            key = f"{ep_.group}:{ep_.name}"
-            if key not in self.loaded:
-                try:
-                    self._extend(ep_.group, ep_.name, ep_.load())
-                    self.loaded.add(key)
-                except Exception as e:
-                    warnings.warn(f"{''.join(traceback.format_tb(e.__traceback__))}\nFailed to load {ep_.group}:{ep_.name}, this extension will be unavailable: {str(e)}")
-                    self.failed.add(key)
+        for p in (*reversed(pathlib.PurePosixPath(path).parents), path, *subpaths):
+            p_ = str(p)
+            if p_ in paths:
+                ep = paths[p_]
+                key = f"{ep.group}:{ep.name}"
+                if key not in self.loaded:
+                    try:
+                        self._extend(ep.group, ep.name, ep.load())
+                        self.loaded.add(key)
+                    except Exception as e:
+                        warnings.warn(f"{''.join(traceback.format_tb(e.__traceback__))}\nFailed to load {ep.group}:{ep.name}, this extension will be unavailable: {str(e)}")
+                        self.failed.add(key)
 
     def load_uri(self, uri: str):
         uri_ = URI(uri)
-        ext  = f"{uri_.scheme}:{str(uri_.path)}"
+        ext = f"{uri_.scheme}:{uri_.path}"
         if ext not in self.loaded:
-            self.load(uri_.scheme, path=str(uri_.path))
-        
+            self.load(uri_.scheme, path=uri_.path)
+
     def open(self, uri: str, data: typing.Any = None, timeout: float | None = None):
         self.load_uri(uri)
-        
+
         result = self.opener.open(uri, data, timeout)
 
         if not result:
@@ -239,13 +233,14 @@ class Registry:
         return result
 
     def client(self, uri: str) -> ExtClient:
+        self.load_uri(uri)
 
         result = self.opener.open(URI(uri).frag("client"))
         if not result:
-            raise URIOpenError("no service found")
+            raise URIOpenError(f"no service found for {uri}")
 
         return result
-
+    
     def extend(self, uri: str, obj):
         uri_ = URI(uri)
-        self._extend(uri_.scheme, str(uri_.path), obj)
+        self._extend(uri_.scheme, uri_.path, obj)

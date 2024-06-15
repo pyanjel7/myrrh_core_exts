@@ -67,9 +67,14 @@ class URI:
         return self._uri_result
 
     @property
-    def path(self):
-        return pathlib.PurePosixPath(self.split.path)
+    def path(self) -> str:
+        return self.split.path
 
+    def joinpath(self, path:str| pathlib.PurePosixPath) -> "URI":
+        path_ = pathlib.PurePosixPath(self.path).joinpath(path)
+        self.path = path_
+        return self
+        
     @path.setter
     def path(self, path: str | pathlib.PurePosixPath):
         self._uri_result = self._uri_result._replace(path=str(path))

@@ -1,9 +1,9 @@
 import urllib.request
 import abc
 
-from myrrh.exts.interfaces import IExtSession, IMyrrhExt, uri_rd
+from myrrh.exts.interfaces import IExtSession, uri_rd
 from myrrh.exts.misc import URI
-from myrrh.exts.protocol import StdExtSession
+from myrrh.exts.protocol import StdExtSession, MyrrhExtBase
 
 
 class IEchoProtocol(IExtSession):
@@ -25,18 +25,14 @@ class HelloSession(StdExtSession, IEchoProtocol):
         return f"Hello {myname}"
 
 
-class Hello(IMyrrhExt):
-    fullpath = ""
+class Hello(MyrrhExtBase):
 
     def __init__(self):
         self._dirs = list()
 
     def open(self, uri: str, *, req: urllib.request.Request | None = None) -> HelloSession:
-        path = str(URI(uri).path).removeprefix(self.fullpath)
+        path = URI(uri).path.removeprefix(self._path)
         return HelloSession(path)
-
-    def basepath(self, path: str):
-        self.fullpath = path
 
     def extend(self, path: str, _obj):
         self._dirs.append(path)
