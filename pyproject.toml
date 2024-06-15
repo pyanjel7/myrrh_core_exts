@@ -37,7 +37,6 @@ mexts = "myrrh.tools.mexts:main"
 
 [project.entry-points."myrrh.exts"]
 "/registry" = "myrrh.extensions.mregistry:ExtRegistry"
-"/registry/tests" = "myrrh.extensions.mregistry:ExtRegistry"
 
 [build-system]
 requires = [
